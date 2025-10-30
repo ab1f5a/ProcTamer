@@ -1,0 +1,114 @@
+﻿<Window x:Class="ProcTamer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ProcTamer"
+        xmlns:vm="clr-namespace:ProcTamer.ViewModels"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        mc:Ignorable="d"
+        Title="ProcTamer" Height="700" Width="1000"
+        WindowStartupLocation="CenterScreen"
+        Background="#F6F8F9"
+        Icon="pack://application:,,,/Assets/app.ico">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="1.4*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 左侧：搜索 +进程列表（虚拟化） -->
+        <Border Grid.Row="0" Grid.Column="0" CornerRadius="8" Background="White" Padding="{StaticResource CardPadding}" >
+            <DockPanel LastChildFill="True">
+                <!-- 顶部工具栏：搜索（无显式标签） -->
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,8">
+                    <materialDesign:PackIcon Kind="PlayCircle" Width="20" Height="20" Foreground="{DynamicResource PrimaryHueMidBrush}" Margin="0,0,8,0"/>
+                    <TextBox Width="420" Style="{StaticResource MinimalTextBox}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" materialDesign:HintAssist.Hint="搜索进程，输入部分名称即可" />
+                    <Button Content="刷新" Command="{Binding LoadCommand}" Style="{StaticResource FlatOutlineButton}" Margin="12,0,0,0"/>
+                </StackPanel>
+
+                <!-- 列表：虚拟化提高大量进程时性能 -->
+                <ListView ItemsSource="{Binding Processes}" VirtualizingStackPanel.IsVirtualizing="True"
+                          VirtualizingStackPanel.VirtualizationMode="Recycling"
+                          ScrollViewer.CanContentScroll="True"
+                          Background="Transparent"
+                          BorderThickness="0">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox IsChecked="{Binding IsChecked}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#222"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </DockPanel>
+        </Border>
+
+        <!--右侧：设置卡片 + 日志 -->
+        <StackPanel Grid.Row="0" Grid.Column="1" Margin="12,0,0,0">
+            <!-- 配置卡（极简） -->
+            <Border CornerRadius="8" Background="White" Padding="{StaticResource CardPadding}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,8">
+                        <materialDesign:PackIcon Kind="Tune" Width="20" Height="20" Foreground="{DynamicResource PrimaryHueMidBrush}" Margin="0,0,8,0"/>
+                        <TextBlock Text=" " FontSize="14" Foreground="#666"/>
+                    </StackPanel>
+
+                    <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" Style="{StaticResource MinimalComboBox}" materialDesign:HintAssist.Hint="方案" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <TextBox Text="{Binding CheckInterval}" Width="80" Style="{StaticResource MinimalTextBox}" materialDesign:HintAssist.Hint="监听间隔（秒）"/>
+                        <Button Content="开始/停止" Command="{Binding StartStopCommand}" Style="{StaticResource FlatAccentButton}" Margin="12,0,0,0" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="应用到运行进程" Command="{Binding ApplyNowCommand}" Style="{StaticResource FlatOutlineButton}" />
+                        <Button Content="保存" Command="{Binding SaveCommand}" Style="{StaticResource FlatOutlineButton}" Margin="8,0,0,0"/>
+                        <Button Content="加载" Command="{Binding LoadCommand}" Style="{StaticResource FlatOutlineButton}" Margin="8,0,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 日志卡（简洁） -->
+            <Border CornerRadius="8" Background="White" Padding="{StaticResource CardPadding}" Margin="0,12,0,0" Height="420">
+                <DockPanel LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="清除日志" Command="{Binding ClearLogsCommand}" Style="{StaticResource FlatOutlineButton}" />
+                    </StackPanel>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent" Margin="0,8,0,0">
+                        <ItemsControl ItemsSource="{Binding Logs}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" Foreground="#444" TextWrapping="Wrap" Margin="0,2,0,2"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- 底部状态栏（极简） -->
+        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" CornerRadius="8" Background="#FFFFFF" Padding="10" Margin="0,12,0,0">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center" >
+                    <CheckBox IsChecked="{Binding AutoStart}" Content="开机自启" Foreground="#444" Margin="0,0,12,0"/>
+                    <CheckBox IsChecked="{Binding ShowOnStartup}" Content="自启显示" Foreground="#444"/>
+                </StackPanel>
+
+                <TextBlock Text="{Binding Status}" Foreground="#007ACC" HorizontalAlignment="Right" DockPanel.Dock="Right" VerticalAlignment="Center"/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
